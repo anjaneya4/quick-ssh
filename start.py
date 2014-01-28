@@ -1,4 +1,3 @@
-
 #!/usr/bin/env python
 
 import sys
@@ -11,7 +10,7 @@ import re
 BASE_PATH = os.path.dirname(os.path.abspath(__file__))
 SERVER_DETAILS_PROPERTIES = BASE_PATH + '/config/server_details.properties'
 GET_GUAKE_VISIBILTY_PY = BASE_PATH + '/lib/getGuakeVisibilty.py'
-SSH_LOGIN_WITH_PASSWORD_EXP = BASE_PATH + '/lib/ssh_login_with_password.exp'
+SSH_LOGIN_WITH_PASSWORD_SH = BASE_PATH + '/lib/ssh_login_with_password.sh'
 
 
 class GuakeSSHMenu:
@@ -83,10 +82,11 @@ class GuakeSSHMenu:
 
     def launchSSH(self, name, ip, username, password):
         if self.isGuakeVisibile():
-            pass
+            os.system('guake -t')
+            os.system('guake -t')
         else:
             os.system('guake -t')
-        ssh_connect_cmd = "%s %s %s %s" % (SSH_LOGIN_WITH_PASSWORD_EXP, ip, username, password)
+        ssh_connect_cmd = "sh %s %s %s %s" % (SSH_LOGIN_WITH_PASSWORD_SH, ip, username, password)
         os.system('guake -n "1" -r "%s" -e "%s"' % (name, ssh_connect_cmd))
 
     def isGuakeVisibile(self):
