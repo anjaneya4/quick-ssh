@@ -1,0 +1,16 @@
+# -----------------------------------------------------------------------------
+# 									:NOTE:
+# -----------------------------------------------------------------------------
+# Any changes in the config file "config/server_details.properties" have been
+# set up to be ignored (since it could contain sensitive information about
+# servers that shouldn't be made public) using the following command:
+#
+# 		git update-index --assume-unchanged config/server_details.properties
+#
+# If any changes need to be done to the config file, run the following command
+# to stop ignoring the changes:
+#
+# 		git update-index --no-assume-unchanged config/server_details.properties
+#
+# REMEMBER to again start ignoring the changes once you commit.
+# -----------------------------------------------------------------------------
