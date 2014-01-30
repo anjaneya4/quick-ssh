@@ -1,4 +1,7 @@
 #!/usr/bin/env python
+# ------------------------------------------------------------------------------
+# Author: Ravit Khurana <ravit.khurana@gmail.com>
+# ------------------------------------------------------------------------------
 
 import sys
 import gtk
@@ -11,17 +14,17 @@ BASE_PATH = os.path.dirname(os.path.abspath(__file__))
 SERVER_DETAILS_PROPERTIES = BASE_PATH + '/config/server_details.properties'
 GET_GUAKE_VISIBILTY_PY = BASE_PATH + '/lib/getGuakeVisibilty.py'
 SSH_LOGIN_WITH_PASSWORD_SH = BASE_PATH + '/lib/ssh_login_with_password.sh'
+QUICK_SSH_PNG = BASE_PATH + "/res/icons/quick-ssh.png"
 
 
-class GuakeSSHMenu:
+class QuickSSHMenu:
     def __init__(self):
         self.ind = appindicator.Indicator(
-            "guake_ssh_menu-indicator",
-            "indicator-messages",
+            "quick-ssh-indicator",
+            QUICK_SSH_PNG,
             appindicator.CATEGORY_APPLICATION_STATUS
         )
         self.ind.set_status(appindicator.STATUS_ACTIVE)
-        self.ind.set_attention_icon("new-messages-red")
         self.menu_setup()
         self.ind.set_menu(self.menu)
 
@@ -101,5 +104,5 @@ class GuakeSSHMenu:
             return False
 
 if __name__ == "__main__":
-    indicator = GuakeSSHMenu()
+    indicator = QuickSSHMenu()
     indicator.main()
