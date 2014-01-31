@@ -2,6 +2,8 @@
 # ------------------------------------------------------------------------------
 # Author: Ravit Khurana <ravit.khurana@gmail.com>
 # ------------------------------------------------------------------------------
+# TODO: Alert user if title for gnome terminal/guake is set as dynamic
+# TODO: Let user choose which terminal he/she wants to use
 
 import sys
 import gtk
@@ -17,8 +19,17 @@ SSH_LOGIN_WITH_PASSWORD_SH = BASE_PATH + '/lib/ssh_login_with_password.sh'
 QUICK_SSH_PNG = BASE_PATH + "/res/icons/quick-ssh.png"
 
 
+class TERMINALS:
+    GUAKE = "Guake Terminal"
+    GNOME = "Gnome Terminal"
+
+# TERMINAL_TO_USE = TERMINALS.GUAKE
+
+
 class QuickSSHMenu:
+
     def __init__(self):
+        self.TERMINAL_TO_USE = TERMINALS.GUAKE
         self.ind = appindicator.Indicator(
             "quick-ssh-indicator",
             QUICK_SSH_PNG,
@@ -35,6 +46,12 @@ class QuickSSHMenu:
         self.quit_item.connect("activate", self.quit)
         self.quit_item.show()
         self.menu.append(self.quit_item)
+
+        # TODO: Make this a submenu containing the available terminals
+        self.toggle_item = gtk.MenuItem("Using - " + self.TERMINAL_TO_USE)
+        self.toggle_item.connect("activate", self.toggle)  # TODO: Rename toggle to something else
+        self.toggle_item.show()
+        self.menu.append(self.toggle_item)
 
         # Reading server details from properties file
         serverDetails = []
@@ -59,8 +76,8 @@ class QuickSSHMenu:
                     )
 
         # Populate the menu
-        # TODO: Make the text formating better
         self.item_dict = {}
+        # TODO: Make the text formating better
         for server in serverDetails:
             self.item_dict[server['label']] = gtk.MenuItem(
                 "%s@%s\t\t (%s)" % (server['username'], server['ip'], server['label']))
@@ -76,6 +93,19 @@ class QuickSSHMenu:
     def quit(self, widget):
         sys.exit(0)
 
+    # TODO: Change name of toggle method and change implementation
+    #       to be able to choose between more than two terminals.
+    def toggle(self, widget):
+        # result = {
+        #     'a': lambda x: x * 5,
+        #     'b': lambda x: x + 7,
+        #     'c': lambda x: x - 2
+        # }.get(self.TERMINAL_TO_USE, TERMINALS.GNOME)
+        if self.TERMINAL_TO_USE == TERMINALS.GNOME:
+            self.TERMINAL_TO_USE = TERMINALS.GUAKE
+        else:
+            self.TERMINAL_TO_USE = TERMINALS.GNOME
+
     def generator(self, server):
         return lambda x: self.launchSSH(
             server['ip'] + ' (' + server['label'] + ')',
@@ -84,13 +114,19 @@ class QuickSSHMenu:
             server['password'])
 
     def launchSSH(self, name, ip, username, password):
-        if self.isGuakeVisibile():
-            os.system('guake -t')
-            os.system('guake -t')
+        ssh_connect_cmd = "sh %s %s %s %s && exit" % (SSH_LOGIN_WITH_PASSWORD_SH, ip, username, password)
+
+        # TODO: Change implementation to be able to choose between more
+        #       than two terminals
+        if self.TERMINAL_TO_USE == TERMINALS.GUAKE:
+            if self.isGuakeVisibile():
+                os.system('guake -t')
+                os.system('guake -t')
+            else:
+                os.system('guake -t')
+            os.system('guake -n "1" -r "%s" -e "%s"' % (name, ssh_connect_cmd))
         else:
-            os.system('guake -t')
-        ssh_connect_cmd = "sh %s %s %s %s" % (SSH_LOGIN_WITH_PASSWORD_SH, ip, username, password)
-        os.system('guake -n "1" -r "%s" -e "%s"' % (name, ssh_connect_cmd))
+            os.system('gnome-terminal --title="%s" -x %s' % (name, ssh_connect_cmd))
 
     def isGuakeVisibile(self):
         p = subprocess.Popen(
