@@ -4,6 +4,7 @@
 # ------------------------------------------------------------------------------
 # TODO: Alert user if title for gnome terminal/guake is set as dynamic
 # TODO: Let user choose which terminal he/she wants to use
+# TODO: Create a dict/list which would hold reference to all the menuitems and menus
 
 import sys
 import gtk
@@ -19,17 +20,14 @@ SSH_LOGIN_WITH_PASSWORD_SH = BASE_PATH + '/lib/ssh_login_with_password.sh'
 QUICK_SSH_PNG = BASE_PATH + "/res/icons/quick-ssh.png"
 
 
-class TERMINALS:
-    GUAKE = "Guake Terminal"
-    GNOME = "Gnome Terminal"
-
-# TERMINAL_TO_USE = TERMINALS.GUAKE
-
-
 class QuickSSHMenu:
 
+    class TERMINALS:
+        GUAKE = "Guake Terminal"
+        GNOME = "Gnome Terminal"
+        XTERM = "Xterm"
+
     def __init__(self):
-        self.TERMINAL_TO_USE = TERMINALS.GUAKE
         self.ind = appindicator.Indicator(
             "quick-ssh-indicator",
             QUICK_SSH_PNG,
@@ -39,19 +37,45 @@ class QuickSSHMenu:
         self.menu_setup()
         self.ind.set_menu(self.menu)
 
+        self.set_terminal(self.TERMINALS.GUAKE)
+
     def menu_setup(self):
         self.menu = gtk.Menu()
 
-        self.quit_item = gtk.MenuItem("Quit")
-        self.quit_item.connect("activate", self.quit)
-        self.quit_item.show()
-        self.menu.append(self.quit_item)
+        self.menu_dict = {}
 
-        # TODO: Make this a submenu containing the available terminals
-        self.toggle_item = gtk.MenuItem("Using - " + self.TERMINAL_TO_USE)
-        self.toggle_item.connect("activate", self.toggle)  # TODO: Rename toggle to something else
-        self.toggle_item.show()
-        self.menu.append(self.toggle_item)
+        # Creating the Quit menu item
+        self.menu_dict["quit_item"] = gtk.MenuItem("Quit")
+        self.menu_dict["quit_item"].connect("activate", self.quit)
+        self.menu_dict["quit_item"].show()
+        self.menu.append(self.menu_dict["quit_item"])
+
+        # Creating the Select Terminal submenu
+        self.menu_dict["select_terminal"] = {}
+        self.menu_dict["select_terminal"]["_submenu"] = gtk.Menu()
+
+        terminals_temp = [
+            self.TERMINALS.GUAKE,
+            self.TERMINALS.GNOME,
+            self.TERMINALS.XTERM
+        ]
+        
+        for terminal_type in terminals_temp:
+            self.menu_dict["select_terminal"][terminal_type] = gtk.MenuItem(terminal_type)
+            self.menu_dict["select_terminal"][terminal_type].connect(
+                "activate",
+                self.set_terminal_generator(terminal_type))
+            self.menu_dict["select_terminal"][terminal_type].show()
+            self.menu_dict["select_terminal"]["_submenu"].append(self.menu_dict["select_terminal"][terminal_type])
+
+        self.menu_dict["select_terminal"]["_menuitem"] = gtk.MenuItem("Select Terminal")
+        self.menu_dict["select_terminal"]["_menuitem"].set_submenu(self.menu_dict["select_terminal"]["_submenu"])
+        self.menu_dict["select_terminal"]["_menuitem"].show()
+        self.menu.append(self.menu_dict["select_terminal"]["_menuitem"])
+
+        self.menu_dict["seperator"] = gtk.SeparatorMenuItem()
+        self.menu_dict["seperator"].show()
+        self.menu.append(self.menu_dict["seperator"])
 
         # Reading server details from properties file
         serverDetails = []
@@ -76,35 +100,33 @@ class QuickSSHMenu:
                     )
 
         # Populate the menu
-        self.item_dict = {}
         # TODO: Make the text formating better
+        max_user_ip_length = max(len("%s@%s" % (server['username'], server['ip'])) for server in serverDetails)
+
         for server in serverDetails:
-            self.item_dict[server['label']] = gtk.MenuItem(
-                "%s@%s\t\t (%s)" % (server['username'], server['ip'], server['label']))
-            self.item_dict[server['label']].connect(
+            username_at_ip = "%s@%s" % (server['username'], server['ip'])
+            self.menu_dict[server['label']] = gtk.MenuItem(
+                "%s %s (%s)" % (username_at_ip, " " * (max_user_ip_length - len(username_at_ip)), server['label']))
+            self.menu_dict[server['label']].connect(
                 "activate",
                 self.generator(server))
-            self.item_dict[server['label']].show()
-            self.menu.append(self.item_dict[server['label']])
+            self.menu_dict[server['label']].show()
+            self.menu.append(self.menu_dict[server['label']])
+
+    def dict_to_string(self, dictionary, offset = ""):
+        indent = offset + 4*" "
+        max_key_length = max(len(key) for key in dictionary)
+        str_dict = "{\n"
+        for k, v in dictionary.iteritems():
+            str_dict += "%s%s %s=> %s\n" % (indent, k, " " * (max_key_length - len(k)) , self.dict_to_string(v, indent) if type(v) == dict else str(v))
+        str_dict += "%s}\n" % offset
+        return str_dict
 
     def main(self):
         gtk.main()
 
     def quit(self, widget):
         sys.exit(0)
-
-    # TODO: Change name of toggle method and change implementation
-    #       to be able to choose between more than two terminals.
-    def toggle(self, widget):
-        # result = {
-        #     'a': lambda x: x * 5,
-        #     'b': lambda x: x + 7,
-        #     'c': lambda x: x - 2
-        # }.get(self.TERMINAL_TO_USE, TERMINALS.GNOME)
-        if self.TERMINAL_TO_USE == TERMINALS.GNOME:
-            self.TERMINAL_TO_USE = TERMINALS.GUAKE
-        else:
-            self.TERMINAL_TO_USE = TERMINALS.GNOME
 
     def generator(self, server):
         return lambda x: self.launchSSH(
@@ -113,12 +135,24 @@ class QuickSSHMenu:
             server['username'],
             server['password'])
 
+    def set_terminal_generator(self, terminal_type):
+        return lambda x: self.set_terminal(terminal_type)
+
+    def set_terminal(self, terminal_type):
+        self.TERMINAL_TO_USE = terminal_type
+        for term_type in self.menu_dict["select_terminal"]:
+            if term_type != "_submenu" and term_type != "_menuitem":
+                self.menu_dict["select_terminal"][term_type].set_label(term_type)
+
+        # TODO: Display active terminal in a more elegant manner
+        self.menu_dict["select_terminal"][terminal_type].set_label(terminal_type + " *")
+
     def launchSSH(self, name, ip, username, password):
-        ssh_connect_cmd = "sh %s %s %s %s && exit" % (SSH_LOGIN_WITH_PASSWORD_SH, ip, username, password)
+        ssh_connect_cmd = "sh %s %s %s %s" % (SSH_LOGIN_WITH_PASSWORD_SH, ip, username, password)
 
         # TODO: Change implementation to be able to choose between more
         #       than two terminals
-        if self.TERMINAL_TO_USE == TERMINALS.GUAKE:
+        if self.TERMINAL_TO_USE == self.TERMINALS.GUAKE:
             if self.isGuakeVisibile():
                 os.system('guake -t')
                 os.system('guake -t')

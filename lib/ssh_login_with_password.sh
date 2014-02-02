@@ -14,6 +14,17 @@ script=$( cat <<'END_OF_SCRIPT'
     spawn ssh $env(USER)@$env(HOST)
 	log_user 1
     expect {
+        "yes/no" {
+            send "yes\r"
+            expect {
+                "password:" {
+                    send "$env(PASS)\r"
+                }
+                timeout {
+                    exit 3
+                }
+            }
+        }
     	"password:" {
     		send "$env(PASS)\r"
     	}
