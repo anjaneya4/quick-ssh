@@ -47,6 +47,11 @@ class QuickSSHMenu:
         self.quit_item.show()
         self.menu.append(self.quit_item)
 
+        self.edit_server_details_item = gtk.MenuItem("<< Edit Server Details >>")
+        self.edit_server_details_item.connect("activate", self.edit_server_details)
+        self.edit_server_details_item.show()
+        self.menu.append(self.edit_server_details_item)
+
         # TODO: Make this a submenu containing the available terminals
         self.toggle_item = gtk.MenuItem("Using - " + self.TERMINAL_TO_USE)
         self.toggle_item.connect("activate", self.toggle)  # TODO: Rename toggle to something else
@@ -127,6 +132,9 @@ class QuickSSHMenu:
             os.system('guake -n "1" -r "%s" -e "%s"' % (name, ssh_connect_cmd))
         else:
             os.system('gnome-terminal --title="%s" -x %s' % (name, ssh_connect_cmd))
+
+    def edit_server_details(self, widget):
+        os.system('xdg-open %s' % SERVER_DETAILS_PROPERTIES)
 
     def isGuakeVisibile(self):
         p = subprocess.Popen(

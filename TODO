@@ -1,0 +1,12 @@
+- quick-ssh
+	+- Working version!
+	+- Add feature - no need to enter password
+	- error handling
+		- allow not storing the passwords
+	- Add feature - support for sftp
+	+- change name for quick-ssh to quick-remote or something
+	+- change icon
+	- Allow support for terminals other than guake too
+	- Documentation
+	+- Option to edit server list
+	- Move the option to edit server list and selecting the terminal to a "Properties" submenu
