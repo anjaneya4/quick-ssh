@@ -50,6 +50,11 @@ class QuickSSHMenu:
         self.menu_dict["quit_item"].show()
         self.menu.append(self.menu_dict["quit_item"])
 
+        self.menu_dict["edit_server_details_item"] = gtk.MenuItem("<< Edit Server Details >>")
+        self.menu_dict["edit_server_details_item"].connect("activate", self.edit_server_details)
+        self.menu_dict["edit_server_details_item"].show()
+        self.menu.append(self.menu_dict["edit_server_details_item"])
+
         # Creating the Select Terminal submenu
         self.menu_dict["select_terminal"] = {}
         self.menu_dict["select_terminal"]["_submenu"] = gtk.Menu()
@@ -113,6 +118,8 @@ class QuickSSHMenu:
             self.menu_dict[server['label']].show()
             self.menu.append(self.menu_dict[server['label']])
 
+        print self.dict_to_string(self.menu_dict)
+
     def dict_to_string(self, dictionary, offset = ""):
         indent = offset + 4*" "
         max_key_length = max(len(key) for key in dictionary)
@@ -161,6 +168,9 @@ class QuickSSHMenu:
             os.system('guake -n "1" -r "%s" -e "%s"' % (name, ssh_connect_cmd))
         else:
             os.system('gnome-terminal --title="%s" -x %s' % (name, ssh_connect_cmd))
+
+    def edit_server_details(self, widget):
+        os.system('xdg-open %s' % SERVER_DETAILS_PROPERTIES)
 
     def isGuakeVisibile(self):
         p = subprocess.Popen(

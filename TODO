@@ -1,0 +1,18 @@
+- quick-ssh
+	+- Working version!
+	+- Add feature - no need to enter password
+	- error handling
+		- allow not storing the passwords
+	- Add feature - support for sftp
+	+- change name for quick-ssh to quick-remote or something
+	+- change icon
+	- Allow support for terminals other than guake too
+	- Documentation
+	- Option to edit server list
+		+- Working
+		- Add option to refresh the menu 
+			or better check the property file for changes
+			and reload the menu automatically.
+	- Move the option to edit server list and selecting the terminal to a "Properties" submenu
+	- Put 80 character limit on every line
+	- gnome-terminal blocks the process - find a way around that
