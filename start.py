@@ -20,6 +20,29 @@ SSH_LOGIN_WITH_PASSWORD_SH = BASE_PATH + '/lib/ssh_login_with_password.sh'
 QUICK_SSH_PNG = BASE_PATH + "/res/icons/quick-ssh.png"
 
 
+class MenuDict(dict):
+    def __init__(self, parent_menuitem, menu, *arg, **kw):
+        # TODO: Check for types of parent_menuitem and menu
+
+        super(MenuDict, self, *arg, **kw)
+        self.parent_menuitem = parent_menuitem
+        self.menu = menu
+        if type(parent_menuitem) == gtk.MenuItem:
+                self.parent_menuitem.set_submenu(self.menu)
+
+    def __str__(self, offset=""):
+        indent = offset + 4*" "
+        max_key_length = max(len(key) for key in self)
+        item_representation = lambda k, v: "%s%s %s=> %s\n" % (indent, k, " " * (max_key_length - len(k)), v.__str__(indent) if type(v) == MenuDict else str(v))
+        str_dict = "{\n"
+        str_dict += item_representation("<parent_menuitem>", self.parent_menuitem)
+        str_dict += item_representation("<menu>", self.menu)
+        for k, v in self.iteritems():
+            str_dict += item_representation(k, v)
+        str_dict += "%s}\n" % offset
+        return str_dict
+
+
 class QuickSSHMenu:
 
     class TERMINALS:
@@ -42,7 +65,7 @@ class QuickSSHMenu:
     def menu_setup(self):
         self.menu = gtk.Menu()
 
-        self.menu_dict = {}
+        self.menu_dict = MenuDict(None, self.menu)
 
         # Creating the Quit menu item
         self.menu_dict["quit_item"] = gtk.MenuItem("Quit")
@@ -55,28 +78,26 @@ class QuickSSHMenu:
         self.menu_dict["edit_server_details_item"].show()
         self.menu.append(self.menu_dict["edit_server_details_item"])
 
-        # Creating the Select Terminal submenu
-        self.menu_dict["select_terminal"] = {}
-        self.menu_dict["select_terminal"]["_submenu"] = gtk.Menu()
+        self.menu_dict["select_terminal"] = MenuDict(gtk.MenuItem("Select Terminal"), gtk.Menu())
+        # self.menu_dict["select_terminal"].parent_menuitem.set_submenu(self.menu_dict["select_terminal"].menu)
+        self.menu_dict["select_terminal"].parent_menuitem.show()
+        self.menu.append(self.menu_dict["select_terminal"].parent_menuitem)
 
         terminals_temp = [
             self.TERMINALS.GUAKE,
             self.TERMINALS.GNOME,
             self.TERMINALS.XTERM
         ]
-        
+
         for terminal_type in terminals_temp:
             self.menu_dict["select_terminal"][terminal_type] = gtk.MenuItem(terminal_type)
             self.menu_dict["select_terminal"][terminal_type].connect(
                 "activate",
                 self.set_terminal_generator(terminal_type))
             self.menu_dict["select_terminal"][terminal_type].show()
-            self.menu_dict["select_terminal"]["_submenu"].append(self.menu_dict["select_terminal"][terminal_type])
+            self.menu_dict["select_terminal"].menu.append(self.menu_dict["select_terminal"][terminal_type])
 
-        self.menu_dict["select_terminal"]["_menuitem"] = gtk.MenuItem("Select Terminal")
-        self.menu_dict["select_terminal"]["_menuitem"].set_submenu(self.menu_dict["select_terminal"]["_submenu"])
-        self.menu_dict["select_terminal"]["_menuitem"].show()
-        self.menu.append(self.menu_dict["select_terminal"]["_menuitem"])
+        # self.menu_dict["select_terminal"] = self.menu_dict["select_terminal"]
 
         self.menu_dict["seperator"] = gtk.SeparatorMenuItem()
         self.menu_dict["seperator"].show()
@@ -118,16 +139,8 @@ class QuickSSHMenu:
             self.menu_dict[server['label']].show()
             self.menu.append(self.menu_dict[server['label']])
 
-        print self.dict_to_string(self.menu_dict)
-
-    def dict_to_string(self, dictionary, offset = ""):
-        indent = offset + 4*" "
-        max_key_length = max(len(key) for key in dictionary)
-        str_dict = "{\n"
-        for k, v in dictionary.iteritems():
-            str_dict += "%s%s %s=> %s\n" % (indent, k, " " * (max_key_length - len(k)) , self.dict_to_string(v, indent) if type(v) == dict else str(v))
-        str_dict += "%s}\n" % offset
-        return str_dict
+        # print self.menu_dict.__str__()
+        # exit()
 
     def main(self):
         gtk.main()
