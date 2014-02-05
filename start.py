@@ -21,25 +21,38 @@ QUICK_SSH_PNG = BASE_PATH + "/res/icons/quick-ssh.png"
 
 
 class MenuDict(dict):
-    def __init__(self, parent_menuitem, menu, *arg, **kw):
-        # TODO: Check for types of parent_menuitem and menu
+    # TODO:
+    #   Impletement this class such that the order of element is preserved
+    def __init__(self, parent_menuitem, menu=gtk.Menu()):
+        super(MenuDict, self)
 
-        super(MenuDict, self, *arg, **kw)
         self.parent_menuitem = parent_menuitem
         self.menu = menu
-        if type(parent_menuitem) == gtk.MenuItem:
-                self.parent_menuitem.set_submenu(self.menu)
+
+        if type(self.menu) == gtk.Menu:
+            pass
+        else:
+            raise Exception("Invalid type for menu: %s" % str(type(self.menu)))
+
+        if self.parent_menuitem is None:
+            pass
+        elif type(self.parent_menuitem) == gtk.MenuItem:
+            self.parent_menuitem.set_submenu(self.menu)
+        else:
+            raise Exception("Invalid type for parent_menuitem: %s" % str(type(self.parent_menuitem)))
 
     def __str__(self, offset=""):
         indent = offset + 4*" "
-        max_key_length = max(len(key) for key in self)
-        item_representation = lambda k, v: "%s%s %s=> %s\n" % (indent, k, " " * (max_key_length - len(k)), v.__str__(indent) if type(v) == MenuDict else str(v))
+        key_list = self.keys()
+        key_list.extend(["<parent_menuitem>", "<menu>"])
+        max_key_length = max(len(key) for key in key_list)
+        item_representation = lambda k, v: "%s%s %s=> %s\n" % (indent, k, " " * (max_key_length - len(k)), v.__str__(indent + "    " + " "*(max_key_length)) if type(v) == MenuDict else str(v))
         str_dict = "{\n"
         str_dict += item_representation("<parent_menuitem>", self.parent_menuitem)
         str_dict += item_representation("<menu>", self.menu)
         for k, v in self.iteritems():
             str_dict += item_representation(k, v)
-        str_dict += "%s}\n" % offset
+        str_dict += "%s}" % offset
         return str_dict
 
 
@@ -58,30 +71,29 @@ class QuickSSHMenu:
         )
         self.ind.set_status(appindicator.STATUS_ACTIVE)
         self.menu_setup()
-        self.ind.set_menu(self.menu)
+        self.ind.set_menu(self.menu_dict.menu)
 
         self.set_terminal(self.TERMINALS.GUAKE)
 
     def menu_setup(self):
-        self.menu = gtk.Menu()
-
-        self.menu_dict = MenuDict(None, self.menu)
+        self.menu_dict = MenuDict(None)
 
         # Creating the Quit menu item
         self.menu_dict["quit_item"] = gtk.MenuItem("Quit")
         self.menu_dict["quit_item"].connect("activate", self.quit)
         self.menu_dict["quit_item"].show()
-        self.menu.append(self.menu_dict["quit_item"])
+        # TODO: The MenuItem should get automatically appended to the menu
+        #       Make changes in the class MenuDict(dict)
+        self.menu_dict.menu.append(self.menu_dict["quit_item"])
 
         self.menu_dict["edit_server_details_item"] = gtk.MenuItem("<< Edit Server Details >>")
         self.menu_dict["edit_server_details_item"].connect("activate", self.edit_server_details)
         self.menu_dict["edit_server_details_item"].show()
-        self.menu.append(self.menu_dict["edit_server_details_item"])
+        self.menu_dict.menu.append(self.menu_dict["edit_server_details_item"])
 
         self.menu_dict["select_terminal"] = MenuDict(gtk.MenuItem("Select Terminal"), gtk.Menu())
-        # self.menu_dict["select_terminal"].parent_menuitem.set_submenu(self.menu_dict["select_terminal"].menu)
         self.menu_dict["select_terminal"].parent_menuitem.show()
-        self.menu.append(self.menu_dict["select_terminal"].parent_menuitem)
+        self.menu_dict.menu.append(self.menu_dict["select_terminal"].parent_menuitem)
 
         terminals_temp = [
             self.TERMINALS.GUAKE,
@@ -97,11 +109,9 @@ class QuickSSHMenu:
             self.menu_dict["select_terminal"][terminal_type].show()
             self.menu_dict["select_terminal"].menu.append(self.menu_dict["select_terminal"][terminal_type])
 
-        # self.menu_dict["select_terminal"] = self.menu_dict["select_terminal"]
-
         self.menu_dict["seperator"] = gtk.SeparatorMenuItem()
         self.menu_dict["seperator"].show()
-        self.menu.append(self.menu_dict["seperator"])
+        self.menu_dict.menu.append(self.menu_dict["seperator"])
 
         # Reading server details from properties file
         serverDetails = []
@@ -137,9 +147,9 @@ class QuickSSHMenu:
                 "activate",
                 self.generator(server))
             self.menu_dict[server['label']].show()
-            self.menu.append(self.menu_dict[server['label']])
+            self.menu_dict.menu.append(self.menu_dict[server['label']])
 
-        # print self.menu_dict.__str__()
+        print self.menu_dict.__str__()
         # exit()
 
     def main(self):
