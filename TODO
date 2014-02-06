@@ -14,6 +14,6 @@
 			or better check the property file for changes
 			and reload the menu automatically.
 	- Move the option to edit server list and selecting the terminal to a "Properties" submenu
-	- Put 80 character limit on every line
+	+- Put 80 character limit on every line
 	- gnome-terminal blocks the process - find a way around that
 	+- Create a "class MenuDict(dict)" to store the "gtk.MenuItem"s and "gtk.Menu"s

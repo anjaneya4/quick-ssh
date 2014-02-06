@@ -45,6 +45,7 @@ if [ $EXITCODE -eq 3 ]; then
 	exit
 elif [ $EXITCODE -gt "0" ]; then
 	echo $?
-	echo "ERROR: Error occured while connecting. Is the username/password correct?"
+	echo "ERROR: Error occured while connecting."
+    echo "Is the username/password correct?"
 	exit
 fi
