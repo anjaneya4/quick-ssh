@@ -41,6 +41,13 @@ class MenuDict(dict):
         else:
             raise Exception("Invalid type for parent_menuitem: %s" % str(type(self.parent_menuitem)))
 
+    def __setitem__(self, key, val):
+        if type(val) not in [MenuDict, gtk.MenuItem, gtk.SeparatorMenuItem]:
+            raise Exception("Invalid type %s of val for key \"%s\"" % (str(type(val)), str(key)))
+        else:
+            print "Added %s => %s" % (key, val)
+            dict.__setitem__(self, key, val)
+
     def __str__(self, offset=""):
         indent = offset + 4*" "
         key_list = self.keys()
