@@ -3,7 +3,6 @@
 # Author: Ravit Khurana <ravit.khurana@gmail.com>
 # -----------------------------------------------------------------------------
 # TODO: Alert user if title for gnome terminal/guake is set as dynamic
-# TODO: Let user choose which terminal he/she wants to use
 
 import sys
 import gtk
@@ -20,8 +19,6 @@ QUICK_SSH_PNG = BASE_PATH + "/res/icons/quick-ssh.png"
 
 
 class MenuDict(dict):
-    # TODO:
-    #   Impletement this class such that the order of element is preserved
     def __init__(self, parent_menuitem, menu=gtk.Menu()):
         super(MenuDict, self)
 
@@ -85,10 +82,58 @@ class MenuDict(dict):
 
 class QuickSSHMenu:
 
-    class TERMINALS:
+    class Terminals:
         GUAKE = "Guake Terminal"
         GNOME = "Gnome Terminal"
         XTERM = "Xterm"
+
+        @classmethod
+        def isGuakeVisibile(cls):
+            p = subprocess.Popen(
+                ['python', GET_GUAKE_VISIBILTY_PY],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE)
+            out, err = p.communicate()
+            if out.strip() == 'True':
+                return True
+            else:
+                return False
+
+        @classmethod
+        def execute(cls, terminal, **kwargs):
+
+            if "cmd"in kwargs:
+                if terminal == cls.GUAKE:
+                    if cls.isGuakeVisibile():
+                        os.system('guake -t')
+                        os.system('guake -t')
+                    else:
+                        os.system('guake -t')
+
+                    if "name" in kwargs:
+                        os.system('guake -n "1" -r "%s" -e "%s"' % (
+                            kwargs["name"],
+                            kwargs["cmd"]
+                        ))
+                    else:
+                        os.system('guake -n "1" -e "%s"' % kwargs["cmd"])
+                elif terminal == cls.GNOME:
+                    if "name" in kwargs:
+                        os.system('gnome-terminal --title="%s" -x %s' % (
+                            kwargs["name"],
+                            kwargs["cmd"]
+                        ))
+                    else:
+                        os.system('gnome-terminal -x %s' % (
+                            kwargs["cmd"]
+                        ))
+                elif terminal == cls.XTERM:
+                        os.system('xterm -e %s' % kwargs["cmd"])
+
+            else:
+                raise Exception("No command given to execute in %s" % (
+                    str(terminal)
+                ))
 
     def __init__(self):
         self.ind = appindicator.Indicator(
@@ -100,7 +145,7 @@ class QuickSSHMenu:
         self.menu_setup()
         self.ind.set_menu(self.menu_dict.menu)
 
-        self.set_terminal(self.TERMINALS.GUAKE)
+        self.set_terminal(self.Terminals.GUAKE)
 
     def menu_setup(self):
         self.menu_dict = MenuDict(None)
@@ -121,9 +166,9 @@ class QuickSSHMenu:
         self.menu_dict["select_terminal"].show()
 
         terminals_temp = [
-            self.TERMINALS.GUAKE,
-            self.TERMINALS.GNOME,
-            self.TERMINALS.XTERM
+            self.Terminals.GUAKE,
+            self.Terminals.GNOME,
+            self.Terminals.XTERM
         ]
 
         for terminal_type in terminals_temp:
@@ -162,7 +207,6 @@ class QuickSSHMenu:
                     )
 
         # Populate the menu
-        # TODO: Make the text formating better
         max_user_ip_length = max(
             len("%s@%s" % (server['username'], server['ip']))
             for server in serverDetails)
@@ -207,7 +251,6 @@ class QuickSSHMenu:
                 self.menu_dict["select_terminal"][term_type].set_label(
                     term_type)
 
-        # TODO: Display active terminal in a more elegant manner
         self.menu_dict["select_terminal"][terminal_type].set_label(
             terminal_type + " *")
 
@@ -219,33 +262,12 @@ class QuickSSHMenu:
             password
         )
 
-        # TODO: Change implementation to be able to choose between more
-        #       than two terminals
-        if self.TERMINAL_TO_USE == self.TERMINALS.GUAKE:
-            if self.isGuakeVisibile():
-                os.system('guake -t')
-                os.system('guake -t')
-            else:
-                os.system('guake -t')
-            os.system('guake -n "1" -r "%s" -e "%s"' % (name, ssh_connect_cmd))
-        else:
-            os.system(
-                'gnome-terminal --title="%s" -x %s' % (name, ssh_connect_cmd)
-            )
+        self.Terminals.execute(self.TERMINAL_TO_USE,
+                               name=name,
+                               cmd=ssh_connect_cmd)
 
     def edit_server_details(self, widget):
         os.system('xdg-open %s' % SERVER_DETAILS_PROPERTIES)
-
-    def isGuakeVisibile(self):
-        p = subprocess.Popen(
-            ['python', GET_GUAKE_VISIBILTY_PY],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE)
-        out, err = p.communicate()
-        if out.strip() == 'True':
-            return True
-        else:
-            return False
 
 if __name__ == "__main__":
     indicator = QuickSSHMenu()
