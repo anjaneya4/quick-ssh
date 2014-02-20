@@ -4,6 +4,7 @@
 	- error handling
 		- allow not storing the passwords
 	- Add feature - support for sftp
+	- Add feature - option for grouping servers
 	+- change name for quick-ssh to quick-remote or something
 	+- change icon
 	- Allow support for terminals other than guake too

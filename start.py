@@ -1,7 +1,7 @@
 #!/usr/bin/env python
-# -----------------------------------------------------------------------------
+# ----------------------------------------------------------------------------
 # Author: Ravit Khurana <ravit.khurana@gmail.com>
-# -----------------------------------------------------------------------------
+# ----------------------------------------------------------------------------
 # TODO: Alert user if title for gnome terminal/guake is set as dynamic
 
 import sys
@@ -12,7 +12,9 @@ import subprocess
 import re
 
 BASE_PATH = os.path.dirname(os.path.abspath(__file__))
-SERVER_DETAILS_PROPERTIES = BASE_PATH + '/config/server_details.properties'
+SERVER_GROUPS_DIRECTORY = BASE_PATH + '/config/server_groups'
+UNGROUPED_SERVERS_CONFIG = BASE_PATH + '/config/ungrouped_servers.config'
+SERVER_DETAILS_CONFIG_NAME_PATTERN = "^(.*)\.config$"
 GET_GUAKE_VISIBILTY_PY = BASE_PATH + '/lib/getGuakeVisibilty.py'
 SSH_LOGIN_WITH_PASSWORD_SH = BASE_PATH + '/lib/ssh_login_with_password.sh'
 QUICK_SSH_PNG = BASE_PATH + "/res/icons/quick-ssh.png"
@@ -25,7 +27,9 @@ class MenuDict(dict):
         if type(menu) == gtk.Menu:
             self.menu = menu
         else:
-            raise Exception("Invalid type for menu: %s" % str(type(self.menu)))
+            raise Exception(
+                "Invalid type for menu: %s" % str(type(self.menu))
+            )
 
         if parent_menuitem is None:
             self.parent_menuitem = None
@@ -182,31 +186,17 @@ class QuickSSHMenu:
         self.menu_dict["seperator"] = gtk.SeparatorMenuItem()
         self.menu_dict["seperator"].show()
 
-        # Reading server details from properties file
-        serverDetails = []
-        with open(SERVER_DETAILS_PROPERTIES, 'r') as f:
-            p = re.compile('^[^=]*')
-            for line in f.readlines():
-                line = line.strip()
-                if line[0] == '#':
-                    continue
-                else:
-                    m = p.match(line)
-                    pos_of_equals = m.end()
-                    ip = line[0:pos_of_equals].strip()
-                    label, username, password = [
-                        x.strip()
-                        for x in line[pos_of_equals+1:].strip().split(':')]
-                    serverDetails.append(
-                        {
-                            'ip': ip,
-                            'label': label,
-                            'username': username,
-                            'password': password
-                        }
-                    )
+        fileList = [
+            filename for filename in os.listdir(SERVER_GROUPS_DIRECTORY)
+            if os.path.isfile(os.path.join(SERVER_GROUPS_DIRECTORY, filename))
+            and re.match(SERVER_DETAILS_CONFIG_NAME_PATTERN, filename)
+        ]
 
-        # Populate the menu
+        # Populate ungrouped servers
+
+        serverDetails = self.fetch_server_group_details(
+            UNGROUPED_SERVERS_CONFIG
+        )
         max_user_ip_length = max(
             len("%s@%s" % (server['username'], server['ip']))
             for server in serverDetails)
@@ -224,6 +214,43 @@ class QuickSSHMenu:
                 "activate",
                 self.generator(server))
             self.menu_dict[server['label']].show()
+
+        # Populate server groups
+
+        for server_group_file_name in fileList:
+            server_group_name = re.match(
+                SERVER_DETAILS_CONFIG_NAME_PATTERN,
+                server_group_file_name
+            ).group(1)
+
+            self.menu_dict[server_group_name] = MenuDict(
+                gtk.MenuItem(server_group_name), gtk.Menu())
+
+            server_menu_dict = self.menu_dict[server_group_name]
+            server_menu_dict.show()
+
+            serverDetails = self.fetch_server_group_details(
+                "%s/%s" % (
+                    SERVER_GROUPS_DIRECTORY, server_group_file_name
+                )
+            )
+            max_user_ip_length = max(
+                len("%s@%s" % (server['username'], server['ip']))
+                for server in serverDetails)
+
+            for server in serverDetails:
+                username_at_ip = "%s@%s" % (server['username'], server['ip'])
+                server_menu_dict[server['label']] = gtk.MenuItem(
+                    "%s %s (%s)" % (
+                        username_at_ip,
+                        " " * (max_user_ip_length - len(username_at_ip)),
+                        server['label']
+                    )
+                )
+                server_menu_dict[server['label']].connect(
+                    "activate",
+                    self.generator(server))
+                server_menu_dict[server['label']].show()
 
         print self.menu_dict.__str__()
         # exit()
@@ -267,7 +294,30 @@ class QuickSSHMenu:
                                cmd=ssh_connect_cmd)
 
     def edit_server_details(self, widget):
-        os.system('xdg-open %s' % SERVER_DETAILS_PROPERTIES)
+        os.system('xdg-open %s' % UNGROUPED_SERVERS_CONFIG)
+
+    def fetch_server_group_details(self, config_file):
+        # Reading server details from config file
+        serverDetails = []
+        with open(config_file, 'r') as f:
+            for line in f.readlines():
+                line = line.strip()
+                if line[0] == '#':
+                    continue
+                else:
+                    ip, label, username, password = [
+                        x.strip()
+                        for x in line.strip().split(':')]
+                    serverDetails.append(
+                        {
+                            'ip': ip,
+                            'label': label,
+                            'username': username,
+                            'password': password
+                        }
+                    )
+
+        return serverDetails
 
 if __name__ == "__main__":
     indicator = QuickSSHMenu()
