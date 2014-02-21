@@ -155,6 +155,7 @@ class QuickSSHMenu:
         self.ind.set_menu(self.menu_dict.menu)
 
         self.set_terminal(self.Terminals.GUAKE)
+        self.client_type = "ssh"
 
     def menu_setup(self):
         self.menu_dict = MenuDict(None)
@@ -281,27 +282,25 @@ class QuickSSHMenu:
         sys.exit(0)
 
     def generator(self, server):
-        return lambda x: self.launchSSH(
-            server['ip'] + ' (' + server['label'] + ')',
-            server['ip'],
-            server['port'],
-            server['username'],
-            server['password'])
+        return lambda x: self.launch_client(server)
 
-    def set_terminal_generator(self, terminal_type):
-        return lambda x: self.set_terminal(terminal_type)
+    def launch_client(self, server):
+        if self.client_type == "ssh":
+            self.launch_SSH(
+                server['ip'] + ' (' + server['label'] + ')',
+                server['ip'],
+                server['port'],
+                server['username'],
+                server['password'])
+        elif self.client_type == "sftp":
+            self.launch_SFTP(
+                server['ip'] + ' (' + server['label'] + ')',
+                server['ip'],
+                server['port'],
+                server['username'],
+                server['password'])
 
-    def set_terminal(self, terminal_type):
-        self.TERMINAL_TO_USE = terminal_type
-        for term_type in self.menu_dict["select_terminal"]:
-            if term_type != "_submenu" and term_type != "_menuitem":
-                self.menu_dict["select_terminal"][term_type].set_label(
-                    term_type)
-
-        self.menu_dict["select_terminal"][terminal_type].set_label(
-            terminal_type + " *")
-
-    def launchSSH(self, name, ip, port, username, password):
+    def launch_SSH(self, name, ip, port, username, password):
         if port is None:
             port = DEFAULT_SSH_PORT
 
@@ -321,6 +320,42 @@ class QuickSSHMenu:
         self.Terminals.execute(self.TERMINAL_TO_USE,
                                name=name,
                                cmd=ssh_connect_cmd)
+
+    def launch_SFTP(self, name, ip, port, username, password):
+        if port is None:
+            port = DEFAULT_SSH_PORT
+
+        os.system("nautilus sftp://%s@%s:%s" % (username, ip, port))
+
+        # if password is None:
+        #     login_script = SSH_LOGIN_WITH_PASSWORD_PROMPT_SH
+        # else:
+        #     login_script = SSH_LOGIN_WITHOUT_PASSWORD_PROMPT_SH
+
+        # ssh_connect_cmd = "sh %s %s %s %s %s" % (
+        #     login_script,
+        #     ip,
+        #     port,
+        #     username,
+        #     password
+        # )
+
+        # self.Terminals.execute(self.TERMINAL_TO_USE,
+        #                        name=name,
+        #                        cmd=ssh_connect_cmd)
+
+    def set_terminal_generator(self, terminal_type):
+        return lambda x: self.set_terminal(terminal_type)
+
+    def set_terminal(self, terminal_type):
+        self.TERMINAL_TO_USE = terminal_type
+        for term_type in self.menu_dict["select_terminal"]:
+            if term_type != "_submenu" and term_type != "_menuitem":
+                self.menu_dict["select_terminal"][term_type].set_label(
+                    term_type)
+
+        self.menu_dict["select_terminal"][terminal_type].set_label(
+            terminal_type + " *")
 
     def edit_server_details(self, widget):
         os.system('xdg-open %s' % UNGROUPED_SERVERS_CONFIG)
