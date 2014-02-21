@@ -192,30 +192,7 @@ class QuickSSHMenu:
             and re.match(SERVER_DETAILS_CONFIG_NAME_PATTERN, filename)
         ]
 
-        # Populate ungrouped servers
-
-        serverDetails = self.fetch_server_group_details(
-            UNGROUPED_SERVERS_CONFIG
-        )
-        max_user_ip_length = max(
-            len("%s@%s" % (server['username'], server['ip']))
-            for server in serverDetails)
-
-        for server in serverDetails:
-            username_at_ip = "%s@%s" % (server['username'], server['ip'])
-            self.menu_dict[server['label']] = gtk.MenuItem(
-                "%s %s (%s)" % (
-                    username_at_ip,
-                    " " * (max_user_ip_length - len(username_at_ip)),
-                    server['label']
-                )
-            )
-            self.menu_dict[server['label']].connect(
-                "activate",
-                self.generator(server))
-            self.menu_dict[server['label']].show()
-
-        # Populate server groups
+        fileList = sorted(fileList, key=str.lower)
 
         for server_group_file_name in fileList:
             server_group_name = re.match(
@@ -234,23 +211,60 @@ class QuickSSHMenu:
                     SERVER_GROUPS_DIRECTORY, server_group_file_name
                 )
             )
+
+            if len(serverDetails) > 0:
+                max_user_ip_length = max(
+                    len("%s@%s" % (server['username'], server['ip']))
+                    for server in serverDetails)
+
+                for server in serverDetails:
+                    username_at_ip = "%s@%s" % (server['username'], server['ip'])
+                    server_menu_dict[server['label']] = gtk.MenuItem(
+                        "%s %s (%s)" % (
+                            username_at_ip,
+                            " " * (max_user_ip_length - len(username_at_ip)),
+                            server['label']
+                        )
+                    )
+                    server_menu_dict[server['label']].connect(
+                        "activate",
+                        self.generator(server))
+                    server_menu_dict[server['label']].show()
+            else:
+                server_menu_dict["EMPTY"] = gtk.MenuItem(
+                    "<EMPTY>"
+                )
+                server_menu_dict["EMPTY"].set_sensitive(False)
+                server_menu_dict["EMPTY"].show()
+
+        self.menu_dict["seperator2"] = gtk.SeparatorMenuItem()
+        self.menu_dict["seperator2"].show()
+
+        # Populate ungrouped servers
+
+        serverDetails = self.fetch_server_group_details(
+            UNGROUPED_SERVERS_CONFIG
+        )
+        if len(serverDetails) > 0:
             max_user_ip_length = max(
                 len("%s@%s" % (server['username'], server['ip']))
                 for server in serverDetails)
 
             for server in serverDetails:
                 username_at_ip = "%s@%s" % (server['username'], server['ip'])
-                server_menu_dict[server['label']] = gtk.MenuItem(
+                self.menu_dict[server['label']] = gtk.MenuItem(
                     "%s %s (%s)" % (
                         username_at_ip,
                         " " * (max_user_ip_length - len(username_at_ip)),
                         server['label']
                     )
                 )
-                server_menu_dict[server['label']].connect(
+                self.menu_dict[server['label']].connect(
                     "activate",
                     self.generator(server))
-                server_menu_dict[server['label']].show()
+                self.menu_dict[server['label']].show()
+
+        # Populate server groups
 
         print self.menu_dict.__str__()
         # exit()
