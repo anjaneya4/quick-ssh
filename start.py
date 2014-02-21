@@ -16,11 +16,16 @@ SERVER_GROUPS_DIRECTORY = BASE_PATH + '/config/server_groups'
 UNGROUPED_SERVERS_CONFIG = BASE_PATH + '/config/ungrouped_servers.config'
 SERVER_DETAILS_CONFIG_NAME_PATTERN = "^(.*)\.config$"
 GET_GUAKE_VISIBILTY_PY = BASE_PATH + '/lib/getGuakeVisibilty.py'
-SSH_LOGIN_WITH_PASSWORD_SH = BASE_PATH + '/lib/ssh_login_with_password.sh'
+SSH_LOGIN_WITHOUT_PASSWORD_PROMPT_SH = BASE_PATH + '/lib/ssh_login_without_password_prompt.sh'
+SSH_LOGIN_WITH_PASSWORD_PROMPT_SH = BASE_PATH + '/lib/ssh_login_with_password_prompt.sh'
 QUICK_SSH_PNG = BASE_PATH + "/res/icons/quick-ssh.png"
+DEFAULT_SSH_PORT = 22
 
 
 class MenuDict(dict):
+    """
+    This class is a wrapper over gtk.Menu()
+    """
     def __init__(self, parent_menuitem, menu=gtk.Menu()):
         super(MenuDict, self)
 
@@ -237,10 +242,10 @@ class QuickSSHMenu:
                 server_menu_dict["EMPTY"].set_sensitive(False)
                 server_menu_dict["EMPTY"].show()
 
+        # Populate ungrouped servers
+
         self.menu_dict["seperator2"] = gtk.SeparatorMenuItem()
         self.menu_dict["seperator2"].show()
-
-        # Populate ungrouped servers
 
         serverDetails = self.fetch_server_group_details(
             UNGROUPED_SERVERS_CONFIG
@@ -279,6 +284,7 @@ class QuickSSHMenu:
         return lambda x: self.launchSSH(
             server['ip'] + ' (' + server['label'] + ')',
             server['ip'],
+            server['port'],
             server['username'],
             server['password'])
 
@@ -295,10 +301,19 @@ class QuickSSHMenu:
         self.menu_dict["select_terminal"][terminal_type].set_label(
             terminal_type + " *")
 
-    def launchSSH(self, name, ip, username, password):
-        ssh_connect_cmd = "sh %s %s %s %s" % (
-            SSH_LOGIN_WITH_PASSWORD_SH,
+    def launchSSH(self, name, ip, port, username, password):
+        if port is None:
+            port = DEFAULT_SSH_PORT
+
+        if password is None:
+            login_script = SSH_LOGIN_WITH_PASSWORD_PROMPT_SH
+        else:
+            login_script = SSH_LOGIN_WITHOUT_PASSWORD_PROMPT_SH
+
+        ssh_connect_cmd = "sh %s %s %s %s %s" % (
+            login_script,
             ip,
+            port,
             username,
             password
         )
@@ -319,12 +334,33 @@ class QuickSSHMenu:
                 if line[0] == '#':
                     continue
                 else:
-                    ip, label, username, password = [
+                    details_list = [
                         x.strip()
-                        for x in line.strip().split(':')]
+                        for x in line.strip().split(';')]
+
+                    print details_list
+                    if len(details_list) == 4:
+                        ip_port, label, username, password = details_list
+                    elif len(details_list) == 3:
+                        ip_port, label, username = details_list
+                        password = None
+                    else:
+                        raise Exception("Invalid entry in file %s" % config_file)
+
+                    ip_port_list = [
+                        x.strip()
+                        for x in ip_port.strip().split(':')]
+
+                    if len(ip_port_list) == 1:
+                        ip = ip_port_list[0]
+                        port = None
+                    else:
+                        ip, port = ip_port_list
+
                     serverDetails.append(
                         {
                             'ip': ip,
+                            'port': port,
                             'label': label,
                             'username': username,
                             'password': password

@@ -2,13 +2,14 @@
 	+- Working version!
 	+- Add feature - no need to enter password
 	- error handling
-		- allow not storing the passwords
+	+- allow not storing the passwords
 	- Add feature - support for sftp
-	- Add feature - option for grouping servers
+	+- Add feature - option for grouping servers
 	+- change name for quick-ssh to quick-remote or something
 	+- change icon
-	- Allow support for terminals other than guake too
-	!- Documentation
+	+- Allow support for terminals other than guake too
+	+- Option to specify of port number in the config file
+	!- Refactoring and Documentation
 	- Option to edit server list
 		+- Working
 		- Add option to refresh the menu 
