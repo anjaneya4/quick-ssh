@@ -156,6 +156,8 @@ class QuickSSHMenu:
 
         self.set_terminal(self.Terminals.GUAKE)
         self.client_type = "ssh"
+        self.menu_dict["mode"]["ssh"].set_label(
+            "SSH *")
 
     def menu_setup(self):
         self.menu_dict = MenuDict(None)
@@ -170,6 +172,24 @@ class QuickSSHMenu:
         self.menu_dict["edit_server_details_item"].connect(
             "activate", self.edit_server_details)
         self.menu_dict["edit_server_details_item"].show()
+
+        self.menu_dict["mode"] = MenuDict(
+            gtk.MenuItem("Mode"), gtk.Menu())
+        self.menu_dict["mode"].show()
+
+        self.menu_dict["mode"]["ssh"] = gtk.MenuItem(
+            "SSH")
+        self.menu_dict["mode"]["ssh"].connect(
+            "activate",
+            self.set_ssh_mode)
+        self.menu_dict["mode"]["ssh"].show()
+
+        self.menu_dict["mode"]["sftp"] = gtk.MenuItem(
+            "SFTP")
+        self.menu_dict["mode"]["sftp"].connect(
+            "activate",
+            self.set_sftp_mode)
+        self.menu_dict["mode"]["sftp"].show()
 
         self.menu_dict["select_terminal"] = MenuDict(
             gtk.MenuItem("Select Terminal"), gtk.Menu())
@@ -327,23 +347,6 @@ class QuickSSHMenu:
 
         os.system("nautilus sftp://%s@%s:%s" % (username, ip, port))
 
-        # if password is None:
-        #     login_script = SSH_LOGIN_WITH_PASSWORD_PROMPT_SH
-        # else:
-        #     login_script = SSH_LOGIN_WITHOUT_PASSWORD_PROMPT_SH
-
-        # ssh_connect_cmd = "sh %s %s %s %s %s" % (
-        #     login_script,
-        #     ip,
-        #     port,
-        #     username,
-        #     password
-        # )
-
-        # self.Terminals.execute(self.TERMINAL_TO_USE,
-        #                        name=name,
-        #                        cmd=ssh_connect_cmd)
-
     def set_terminal_generator(self, terminal_type):
         return lambda x: self.set_terminal(terminal_type)
 
@@ -403,6 +406,20 @@ class QuickSSHMenu:
                     )
 
         return serverDetails
+
+    def set_ssh_mode(self, widget):
+        self.client_type = "ssh"
+        self.menu_dict["mode"]["ssh"].set_label(
+            "SSH *")
+        self.menu_dict["mode"]["sftp"].set_label(
+            "SFTP")
+
+    def set_sftp_mode(self, widget):
+        self.client_type = "sftp"
+        self.menu_dict["mode"]["ssh"].set_label(
+            "SSH")
+        self.menu_dict["mode"]["sftp"].set_label(
+            "SFTP *")
 
 if __name__ == "__main__":
     indicator = QuickSSHMenu()
